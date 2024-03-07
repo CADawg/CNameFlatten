@@ -55,7 +55,7 @@ The cron expression follows the standard format:
 
 ## Example Setup
 
-![Demo Image](./Screenshot_20240307_203950.png)
+![Demo Image](https://github.com/CADawg/CNameFlatten/blob/main/demo/Screenshot_20240307_203950.png?raw=true)
 
 Setup a TXT record as shown above, and the A and AAAA records will be created from the domain specified in the text record, in this case `domain-proxy.bearblog.dev`.
 
