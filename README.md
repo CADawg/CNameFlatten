@@ -61,6 +61,17 @@ The cron expression follows the standard format:
 └──────────────────── minute (0 - 59)
 ```
 
+
+### Running with PM2
+
+You can also run the application with PM2 by using the following command:
+
+```bash
+pm2 start --name "CNameFlatten" ./CNameFlatten -- "*/5 * * * *"
+```
+
+This will run the process every 5 minutes.
+
 ## Example Setup
 
 ![Demo Image](https://github.com/CADawg/CNameFlatten/blob/main/demo/Screenshot_20240307_203950.png?raw=true)
