@@ -10,7 +10,9 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -63,6 +65,13 @@ func main() {
 		}
 
 		c.Start()
+
+		s := make(chan os.Signal, 1)
+		signal.Notify(s, os.Interrupt, syscall.SIGTERM)
+		<-s
+
+		c.Stop()
+		fmt.Println("Program interrupted, exiting")
 	} else {
 		fmt.Println("No cron expression provided, running once")
 		doUpdateRecords()

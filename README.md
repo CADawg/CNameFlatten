@@ -20,7 +20,15 @@ You can run the application in two ways:
 
 ### One-time Execution
 
-To run the application once, use the following command:
+To run the application you will first need to set the following environment variables:
+
+- `MAILINABOX_USER` - A user with access to the Mail-In-A-Box API (admin panel)
+- `MAILINABOX_PASSWORD` - The password of the user
+- `MAILINABOX_HOSTNAME` - The hostname of the Mail-In-A-Box server (i.e. `box.example.com`)
+
+You can provide these via a `.env` file in the same directory as the application, or by setting them in the environment.
+
+Then, simply run the application using the following command (it will run once and exit):
 
 ```bash
 CNameFlatten
@@ -57,7 +65,7 @@ The cron expression follows the standard format:
 
 ![Demo Image](https://github.com/CADawg/CNameFlatten/blob/main/demo/Screenshot_20240307_203950.png?raw=true)
 
-Setup a TXT record as shown above, and the A and AAAA records will be created from the domain specified in the text record, in this case `domain-proxy.bearblog.dev`.
+Set up a TXT record as shown above, and the A and AAAA records will be created from the domain specified in the text record, in this case `domain-proxy.bearblog.dev`.
 
 ## Contributing
 
