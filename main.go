@@ -3,7 +3,10 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/robfig/cron/v3"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -39,6 +42,34 @@ var dnsResolver = &net.Resolver{
 var mailInABoxAlreadyPutURLs []string
 
 func main() {
+	// get arguments to program
+	args := os.Args[1:]
+
+	// if the args are a valid cron expression, then run the update records function every time the cron expression is true
+	// otherwise run the update records function once
+
+	if len(args) >= 1 {
+		var fullCron = args[0]
+		if len(args) > 1 {
+			fullCron = strings.Join(args, " ")
+		}
+
+		c := cron.New()
+		_, err := c.AddFunc(fullCron, doUpdateRecords)
+
+		if err != nil {
+			fmt.Println("Invalid cron expression, exiting")
+			os.Exit(1)
+		}
+
+		c.Start()
+	} else {
+		fmt.Println("No cron expression provided, running once")
+		doUpdateRecords()
+	}
+}
+
+func doUpdateRecords() {
 	username := os.Getenv("MAILINABOX_USER")
 	password := os.Getenv("MAILINABOX_PASSWORD")
 	hostname := os.Getenv("MAILINABOX_HOSTNAME")
@@ -47,10 +78,13 @@ func main() {
 	res, err := GetRequestWithAuth(username, password, "https://"+hostname+"/admin/dns/custom")
 
 	if err != nil {
+		fmt.Println("Failed to get records from MailInABox, check your .env file")
 		panic(err)
 	}
 
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close()
+	}(res.Body)
 
 	// parse the response
 	var records []MailInABoxDNSRecord
@@ -58,8 +92,8 @@ func main() {
 	err = json.NewDecoder(res.Body).Decode(&records)
 
 	if err != nil {
+		fmt.Println("Failed to parse records from MailInABox")
 		panic(err)
-
 	}
 
 	var interestingRecords []MailInABoxDNSRecord
@@ -82,6 +116,7 @@ func main() {
 		records, err := dnsResolver.LookupIPAddr(context.Background(), record.Target)
 
 		if err != nil {
+			fmt.Println("Failed to lookup IP address for " + record.Target + " from " + record.Source)
 			panic(err)
 		}
 
@@ -93,12 +128,14 @@ func main() {
 				_, err := SetMailInABoxAnswer(username, password, "https://"+hostname+"/admin/dns/custom/"+record.Parent+"/A", ip.IP.String())
 
 				if err != nil {
+					fmt.Println("Failed to update A record for " + record.Target + " from " + record.Source)
 					panic(err)
 				}
 			} else {
 				// update Screaming (AAAA) records
 				_, err := SetMailInABoxAnswer(username, password, "https://"+hostname+"/admin/dns/custom/"+record.Parent+"/AAAA", ip.IP.String())
 				if err != nil {
+					fmt.Println("Failed to update AAAA record for " + record.Target + " from " + record.Source)
 					panic(err)
 				}
 			}

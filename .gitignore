@@ -22,3 +22,6 @@ go.work
 
 # Private env file
 .env
+
+# IDE files
+.idea
