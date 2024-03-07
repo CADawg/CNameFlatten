@@ -104,6 +104,7 @@ func doUpdateRecords() {
 		if record.Type == "TXT" && src[0] == "_cname_flatten" {
 			// needs to be above 2 because if it's _cname_flatten.com then we can't set the A and AAAA records for .com
 			if len(src) >= 2 {
+				fmt.Println("Found relevant record: " + record.Source + " -> " + record.Target)
 				record.Parent = strings.Join(strings.Split(record.Source, ".")[1:], ".")
 				interestingRecords = append(interestingRecords, record)
 			}
@@ -124,6 +125,7 @@ func doUpdateRecords() {
 			isV4 := ip.IP.To4() != nil
 
 			if isV4 {
+				fmt.Println("Updating A record for " + record.Target + " from " + record.Source)
 				// update Whispering (A) records
 				_, err := SetMailInABoxAnswer(username, password, "https://"+hostname+"/admin/dns/custom/"+record.Parent+"/A", ip.IP.String())
 
@@ -132,6 +134,7 @@ func doUpdateRecords() {
 					panic(err)
 				}
 			} else {
+				fmt.Println("Updating AAAA record for " + record.Target + " from " + record.Source)
 				// update Screaming (AAAA) records
 				_, err := SetMailInABoxAnswer(username, password, "https://"+hostname+"/admin/dns/custom/"+record.Parent+"/AAAA", ip.IP.String())
 				if err != nil {
