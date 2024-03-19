@@ -83,6 +83,8 @@ func doUpdateRecords() {
 	password := os.Getenv("MAILINABOX_PASSWORD")
 	hostname := os.Getenv("MAILINABOX_HOSTNAME")
 
+	mailInABoxAlreadyPutURLs = make([]string, 0)
+
 	// get the list of dns records (we need to look for _cname_flatten TXT records)
 	res, err := GetRequestWithAuth(username, password, "https://"+hostname+"/admin/dns/custom")
 
@@ -123,14 +125,45 @@ func doUpdateRecords() {
 	// update the A and AAAA records based on the TXT value's DNS records
 	for _, record := range interestingRecords {
 		// need to do a dns lookup
-		records, err := dnsResolver.LookupIPAddr(context.Background(), record.Target)
+		recordsDns, err := dnsResolver.LookupIPAddr(context.Background(), record.Target)
 
 		if err != nil {
 			fmt.Println("Failed to lookup IP address for " + record.Target + " from " + record.Source)
 			panic(err)
 		}
 
-		for _, ip := range records {
+		// check if all ips are satisfied and skip if so
+		var allSatisfied = true
+
+		for _, ip := range recordsDns {
+			for _, existingRecord := range records {
+				if strings.Join(strings.Split(record.Source, ".")[1:], ".") == existingRecord.Source && (existingRecord.Type == "A" || existingRecord.Type == "AAAA") {
+					isExistingIpv4 := net.ParseIP(existingRecord.Target).To4() != nil
+					isNewIpv4 := ip.IP.To4() != nil
+
+					if isExistingIpv4 != isNewIpv4 {
+						continue // we skip because this is not the same type of IP address
+					}
+
+					if strings.TrimSpace(existingRecord.Target) == ip.IP.String() {
+						fmt.Println("IP address " + existingRecord.Target + " from " + existingRecord.Source + " already exists in DNS")
+						continue
+					}
+
+					fmt.Println("IP address " + existingRecord.Target + " from " + existingRecord.Source + " does not exist in DNS")
+					allSatisfied = false
+				}
+			}
+		}
+
+		fmt.Println("All satisfied: " + fmt.Sprintf("%t", allSatisfied))
+
+		if allSatisfied {
+			fmt.Println("All IP addresses for " + record.Target + " from " + record.Source + " already exist in DNS")
+			continue
+		}
+
+		for _, ip := range recordsDns {
 			isV4 := ip.IP.To4() != nil
 
 			if isV4 {
